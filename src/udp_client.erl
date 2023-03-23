@@ -1,6 +1,6 @@
 -module(udp_client).
-% -export([start/0, listen/1, loop/1]).
--compile(export_all).
+-export([start/0, listen/1, loop/1]).
+% -compile(export_all).
 -define(PORT, 3010).
 -define(SERVER_PORT, 3000).
 -define(SERVER_HOST, {127,0,0,1}).
