@@ -1,5 +1,5 @@
 -module(tcp_client).
--export([start/0, connect/2, loop/3]).
+-export([start/0, connect/2, loop/3, enviar/2]).
 
 
 -define(SERVER_PORT, 3000).
@@ -30,7 +30,8 @@ loop(Socket, Host, Puerto) ->
             loop(Socket, Host, Puerto)
         end.
 
-
+enviar(Pid, Mensaje) -> % mensaje de cliente a server poner en el PID de cliente
+    Pid ! {enviar, Mensaje}.
 
 
 

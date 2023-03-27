@@ -1,5 +1,5 @@
 -module(tcp_server).
--export([start/0, loop/3, accepter/1, listen/1]).
+-export([start/0, loop/3, accepter/1, listen/1, mensaje/3]).
 -define(PORT, 3000).
 
 
@@ -20,13 +20,13 @@ accepter(SocketListener) ->
 
 loop(Socket, Host, Puerto) ->
     receive 
-        {tcp, Socket, Datos} ->
-            logger:alert("Se recibio desde ~p por el puerto ~p la siguiente informacion: ~p~n", [Host, Puerto, Datos]),
-            gen_tcp:send(Socket, [<<"Recibido: ">>, Datos]),
-            loop(Socket, Host, Puerto);
         {tcp, Socket, <<"exit", _/binary>>} ->
-            logger:notice("Se recibio peticion para cerrar la conexion desde ~p por el puerto ~p~n", [Host, Puerto]),
+            logger:notice("Se recibio desde el cliente peticion para cerrar la conexion desde ~p por el puerto ~p~n", [Host, Puerto]),
             gen_tcp:close(Socket);
+        {tcp, Socket, Mensaje} ->
+            logger:alert("Se recibio desde ~p por el puerto ~p la siguiente informacion: ~p~n", [Host, Puerto, Mensaje]),
+            gen_tcp:send(Socket, [<<"Recibido: ">>, Mensaje]),
+            loop(Socket, Host, Puerto);
         {tcp_closed, _Socket} ->
             logger:alert("Se cerro la conexion de ~p por el puerto ~p~n", [Host, Puerto]);
         Mensaje ->
@@ -34,3 +34,5 @@ loop(Socket, Host, Puerto) ->
             loop(Socket, Host, Puerto)
         end.
 
+mensaje(Pid, Socket, Val) -> % mensaje desde el server al cliente poner en el PID del server
+    Pid ! {tcp, Socket, Val}.
