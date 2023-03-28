@@ -1,0 +1,4 @@
+erl -sname i1 
+net:ping('i2@DESKTOP-BOK9IUK'). //en este caso se llama i2 el otro nodo(responde pong si la conexion fue hecha con exito)
+nodes().                        //para comprobar que esta correctamente conectado el nodo
+
