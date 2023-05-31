@@ -3,7 +3,7 @@
 
 
 %                        export de la API
--export([start_link/0, store/2, get/1, llaves/0, clear/0, sleep/0]).
+-export([start_link/0, store/2, get/1, llaves/0, clear/0, sleep/0, stop/0]).
 %                        export para CALLBACKS
 -export([init/1, handle_call/3, handle_cast/2,handle_info/2, terminate/2, code_change/3, format_status/2]).
 %=======================================================================%
@@ -38,7 +38,7 @@ clear() ->
 sleep() ->
     gen_server:call(?SERVER, {sleep},6001).% el ultimo numero es el limite del timeout
 stop() ->
-    gen_server:cast(?SERVER, {deener}).
+    gen_server:cast(?SERVER, {detener}).
 
 % para visibilidad de los datos desde otros nodos:____________________________________________________________________
 % start_link() -> % al poner {global, ?MODULE} 
