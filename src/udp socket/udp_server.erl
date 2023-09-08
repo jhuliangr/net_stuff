@@ -8,8 +8,7 @@ start() ->
     % udp:listen(?PORT).
 
 listen(Puerto) ->
-    Opts = [{active, true}, binary],
-    {ok, Socket} = gen_udp:open(Puerto,Opts),
+    {ok, Socket} = gen_udp:open(Puerto,[{active, true}, binary]),
     logger:notice("Server Listening in port ~p~n", [Puerto]),
     loop(Socket).
 

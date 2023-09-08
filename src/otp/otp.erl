@@ -1,30 +1,36 @@
 -module(otp).
--export([start/0, save/3, imprime/1, get/2, clear/1, llaves/1]).
+
+%           Api Export
+-export([start/0, save/3, print/1, get/2, clear/1, get_keys/1, get_data/1, delete/2]).
+
+%           Callback export
 -export([init/1, handle_call/3,handle_cast/2]).
 
+% Functions..................................................................................................
 start() ->
-    interfazOTP:start(?MODULE, [maps:new()]).
+    otp_interface:start(?MODULE, [maps:new()]).
     % spawn(fun()->init(maps:new())end).
 
-init([Estado]) ->
-    Estado.
 
-% Funciones...............................
 save(Pid, Key, Val) ->
-    interfazOTP:async_call(Pid, {store, Key, Val}).
+    otp_interface:async_call(Pid, {store, Key, Val}).
     % Pid ! {store, Key, Val}.
 
-imprime(Pid) -> % imrimir todos los elementos
-    interfazOTP:async_call(Pid, {print}).
+print(Pid) -> % Print all the elements
+    otp_interface:async_call(Pid, {print}).
     % Pid ! {print}.
 
-clear(Pid) -> % vacia el maps
-    interfazOTP:async_call(Pid, {clear}).
+clear(Pid) -> % To clear the maps content
+    otp_interface:async_call(Pid, {clear}).
     % Pid ! {clear}.
 
-get(Pid, Key) -> % obtener un elemento por su clave
-    interfazOTP:sync_call(Pid, {get, Key}).
-    % Ref = erlang:make_ref(), % da siempre que se llama un id unico
+delete(Pid, Key) -> % For removing a pair using its key 
+    otp_interface:async_call(Pid, {delete, Key}).
+    % Pid ! {delete, Key}.
+
+get(Pid, Key) -> % For reading a value using its key to access it
+    otp_interface:sync_call(Pid, {get, Key}).
+    % Ref = erlang:make_ref(),
     % Pid ! {self(), Ref, get, Key},
     % receive 
     %     {Ref, Res} -> Res
@@ -32,79 +38,89 @@ get(Pid, Key) -> % obtener un elemento por su clave
     %             erlang:error(timeout)
     % end.
 
-llaves(Pid) -> % devuelve el maps
-    interfazOTP:sync_call(Pid, {getLlaves}).
+get_keys(Pid) -> % For retrieving all the keys stored
+    otp_interface:sync_call(Pid, {get_keys}).
     % Ref = erlang:make_ref(),
-    % Pid ! {self(), Ref, getLlaves},
+    % Pid ! {self(), Ref, get_keys},
     % receive 
     %     {Ref, Res} -> Res
     %     after 1000 -> 
     %         erlang:error(timeout)
     % end.
 
-%===============================================================================
-%                               Handlers
-%===============================================================================
-handle_cast({store, Key, Val}, Json) ->
-    maps:put(Key, Val, Json);
+get_data(Pid) ->
+    otp_interface:sync_call(Pid, {get_data}).
+%===========================================================================================================%
+%                               Handlers                                                                    %
+%===========================================================================================================%
+init([State]) ->
+    State.
 
-handle_cast({print}, Json) ->
-    io:format("Json: ~p~n",[Json]),
-    Json;
+handle_cast({store, Key, Val}, Maps) ->
+    maps:put(Key, Val, Maps);
 
-handle_cast({clear}, _Json) ->
+handle_cast({print}, Maps) ->
+    io:format("Maps: ~p~n",[Maps]),
+    Maps;
+handle_cast({delete, Key}, Maps) ->
+    maps:remove(Key, Maps);
+
+handle_cast({clear}, _Maps) ->
     maps:new().
 
-handle_call({ get, Key}, PidRef, Json) ->
-    case maps:find(Key, Json) of
+handle_call({get, Key}, PidRef, Maps) ->
+    case maps:find(Key, Maps) of
         {ok, Val} -> 
-            interfazOTP:responder(PidRef, {Val});
+            otp_interface:answer_call(PidRef, {Val});
         _ ->
-            interfazOTP:responder(PidRef, {null})
+            otp_interface:answer_call(PidRef, {null})
     end,
-    Json;
-handle_call({getLlaves}, PidRef, Json) ->
-    interfazOTP:responder(PidRef, {maps:keys(Json)}),
-    Json;
+    Maps;
+handle_call({get_keys}, PidRef, Maps) ->
+    otp_interface:answer_call(PidRef, {maps:keys(Maps)}),
+    Maps;
+handle_call({get_data}, PidRef, Maps) ->
+    otp_interface:answer_call(PidRef, {Maps}),
+    Maps;
 handle_call(_, _, _) ->
-    io:fwrite("Comando Desconocido",[]).
+    io:fwrite("Unknown Command",[]).
 
 
 
 
 %Proceso.....................................................................
-% loop(Json) ->
+% loop(Maps) ->
 %     receive
 %         {store, Key, Val} ->
-%             NewJson = maps:put(Key, Val, Json),
-%             io:format("Json actual: ~p~n",[NewJson]),
-%             loop(NewJson);
+%             NewMaps = maps:put(Key, Val, Maps),
+%             io:format("Actual Maps: ~p~n",[NewMaps]),
+%             loop(NewMaps);
 
 %         {Pid, Ref, {get, Key}} ->
-%             case maps:find(Key, Json) of
+%             case maps:find(Key, Maps) of
 %                 {ok, Val} -> 
 %                     % Pid ! {Ref, Val};
-%                     interfazOTP:responder(Pid, Ref, {Val});
+%                     otp_interface:answer_call(Pid, Ref, {Val});
 %                 _ ->
 %                     % Pid ! {Ref, null}
-%                     interfazOTP:responder(Pid, Ref, {null})
+%                     otp_interface:answer_call(Pid, Ref, {null})
 %             end,
-%             loop(Json);
+%             loop(Maps);
 
-%         {Pid, Ref, {getLlaves}} ->
-%             % Pid ! {Ref, maps:keys(Json)},
-%             interfazOTP:responder(Pid, Ref, {maps:keys(Json)}),
-%             loop(Json);
+%         {Pid, Ref, {get_keys}} ->
+%             % Pid ! {Ref, maps:keys(Maps)},
+%             otp_interface:answer_call(Pid, Ref, {maps:keys(Maps)}),
+%             loop(Maps);
 
 %         {print} ->
-%             io:format("Json: ~p~n",[Json]),
-%             loop(Json);
+%             io:format("Maps: ~p~n",[Maps]),
+%             loop(Maps);
 
 %         {clear} ->
 %             loop(maps:new());
 
 %         _ ->
-%             io:fwrite("Comando Desconocido",[]),
-%             loop(Json)
+%             io:fwrite("Unknown Command",[]),
+%             loop(Maps)
 %     end.
 

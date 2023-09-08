@@ -1,37 +1,55 @@
 -module(tcp_client).
--export([start/0, connect/2, loop/3, enviar/2]).
-
-
--define(SERVER_PORT, 3000).
+%           API functions
+-export([start/1, send/2, close_socket/1]).
+%           For now we will work with our localhost
 -define(SERVER_HOST, {127,0,0,1}).
 
-start() ->
-    spawn(?MODULE, connect, [?SERVER_HOST, ?SERVER_PORT]).
+%===========================================================================================================%
+%       Public Functions:                                                                                   %
+%===========================================================================================================%
 
-connect(Host, Puerto) ->
-    Opts = [{active, true}, {mode, binary}],
-    {ok, Socket} = gen_tcp:connect(Host, Puerto, Opts),
-    io:format("Conectado al server ~p de forma exitosa en el puerto ~p~n", [Host, Puerto]),
-    loop(Socket, Host, Puerto).
+start(ServerPort) ->
+    spawn(fun() -> connect(?SERVER_HOST, ServerPort) end).
 
-loop(Socket, Host, Puerto) ->
+send(Pid, Message) -> % Message from client to server, Its argument most be the Pid of the client
+    Pid ! {send, Message}.
+
+close_socket(Pid) ->
+    Pid ! {stop}.
+
+%===========================================================================================================%
+%       Private Functions:                                                                                   %
+%===========================================================================================================%
+
+connect(Host, Port) ->
+    try
+        {ok, Socket} = gen_tcp:connect(Host, Port, [{active, true}, {mode, binary}]),
+        io:format("Connected to the server ~p successfully on port ~p~n", [Host, Port]),
+        loop(Socket, Host, Port)
+    catch
+        error:{badmatch,{error,econnrefused}} ->
+            io:format("Error, connection refused~n");
+        error:{badmatch,{error,etimedout}} ->
+            io:format("Error, connection timeout~n");
+        error:{badmatch,{error,einval}} ->
+            io:format("Error, invalid argument~n")
+    end.
+
+loop(Socket, Host, Port) ->
     receive
         {tcp, Socket, Datos} ->
-            io:format("Recibido desde el host ~p por el puerto ~p, lo siguiente: ~p~n", [Host, Puerto, binary_to_list(Datos)]),
-            loop(Socket, Host, Puerto);
-        {enviar, Mensaje} ->
-            gen_tcp:send(Socket, Mensaje),
-            loop(Socket, Host, Puerto);
-        stop ->
+            io:format("Received from ~p by port: ~p -> ~p~n", [Host, Port, binary_to_list(Datos)]),
+            loop(Socket, Host, Port);
+        {send, Message} ->
+            gen_tcp:send(Socket, Message),
+            loop(Socket, Host, Port);
+        {tcp_closed, _} ->
+            io:format("TCP connection closed by server~n");
+        {stop} ->
             gen_tcp:close(Socket),
             ok;
-        Mensaje ->
-            io:format("Error, se recibio: ~p~n", [Mensaje]),
-            loop(Socket, Host, Puerto)
+        Message ->
+            io:format("Error, it was received this: ~p~n", [Message]),
+            loop(Socket, Host, Port)
         end.
-
-enviar(Pid, Mensaje) -> % mensaje de cliente a server poner en el PID de cliente
-    Pid ! {enviar, Mensaje}.
-
-
 

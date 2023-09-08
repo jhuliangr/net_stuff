@@ -1,18 +1,21 @@
 -module(udp_client).
+%           API functions
 -export([start/0, listen/1, loop/1]).
-% -compile(export_all).
+
 -define(PORT, 3010).
 -define(SERVER_PORT, 3000).
 -define(SERVER_HOST, {127,0,0,1}).
-
+%===========================================================================================================%
+%       Public Functions:                                                                                   %
+%===========================================================================================================%
+% Starting as a process
 start() ->
     spawn(?MODULE, listen, [?PORT]).
     % udp_client:listen(?PORT).
 
-listen(Puerto) ->
-    Opts = [{active, true}, {mode, binary}],
-    {ok, Socket} = gen_udp:open(Puerto, Opts),
-    io:format("Cliente Escuchando en el puerto: ~p~n", [Puerto]),
+listen(Port) ->
+    {ok, Socket} = gen_udp:open(Port, [{active, true}, {mode, binary}]),
+    io:format("Client listening in port: ~p~n", [Port]),
     loop(Socket).
 
 loop(Socket) ->
