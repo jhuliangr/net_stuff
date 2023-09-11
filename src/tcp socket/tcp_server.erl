@@ -1,5 +1,5 @@
 -module(tcp_server).
--export([start/1, stop/0, message/2]).
+-export([start/1, stop/1, message/2]).
 
 %===========================================================================================================%
 %       Public Functions:                                                                                   %
@@ -15,8 +15,9 @@ start(Port) ->
 message(Pid, Msg) -> % mensaje desde el server al cliente poner en el PID del server
     Pid ! {msg_for_clients, Msg}.
 
-stop() ->
+stop(Pid) ->
     % Disconnecting all clients
+    Pid ! stop,
     {Map} = otp:get_data(db),
     maps:foreach(fun(Port, Socket) ->
         otp:delete(db, Port),
@@ -33,9 +34,9 @@ stop() ->
 %       Private Functions:                                                                                   %
 %===========================================================================================================%
 
-listen(Puerto) ->
-    {ok, Socket} = gen_tcp:listen(Puerto, [{active, true},{mode, binary}]),
-    logger:alert("TCP Server Started on Port: ~p~n", [Puerto]),
+listen(Port) ->
+    {ok, Socket} = gen_tcp:listen(Port, [{active, true},{mode, binary}]),
+    logger:alert("TCP Server Started on Port: ~p~n", [Port]),
     % Storing the socket into the gen_server
     server:store(socket, Socket),
     accepter(Socket).
@@ -46,10 +47,10 @@ accepter(SocketListener) ->
         % Each client will have its own process
         spawn(?MODULE, accepter,[SocketListener]),
         % Get client's attributes and save them into the OTP scoped database
-        {ok, {Host, Puerto}} = inet:peername(Socket),
-        otp:save(db, Puerto, Socket),
-        io:format("Client connected: ~p in Port: ~p~n", [Host, Puerto]),
-        loop(Socket, Host, Puerto)
+        {ok, {Host, Port}} = inet:peername(Socket),
+        otp:save(db, Port, Socket),
+        io:format("Client connected: ~p on Port: ~p~n", [Host, Port]),
+        loop(Socket, Host, Port)
     catch
         error:{badmatch,{error,closed}} ->
             io:format("Error, a badmatch ocurred~n")
@@ -84,6 +85,10 @@ loop(Socket, Host, Port) ->
         {error, closed} ->
             otp:delete(db, Port),
             io:format("There was an error, client ~p was disconnected, port ~p is free", [Host, Port]);
+        
+        stop ->
+            gen_tdp:close(Socket),
+            ok;
 
         Other ->
             logger:alert("Unknown command received from: ~p it is: ~p~n", [Host, Other]),

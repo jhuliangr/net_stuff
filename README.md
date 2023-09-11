@@ -82,7 +82,6 @@ Pid = tcp_server:start(3000).
 tcp_server:message(Pid, "Here goes the message you want to send")
 
 % Disconnect every client and shut down the server
-% The process for unconnected clients is not being killed, i'll do it soon...
 tcp_server:stop().
 
 % If you want to run the server again without closing the actual console don't forget to do this: 
