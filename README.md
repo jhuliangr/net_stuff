@@ -104,3 +104,30 @@ tcp_client:send(Pid, "exit from this Server").
 % Closing the socket from client
 tcp_client:close_socket(Pid)
 ```
+## UDP socket workflow
+
+UDP sockets, receiver and sender, using the gen_server modules to store client data.
+
+### UDP Receiver
+
+``` Erlang
+% Starting the socket on the port you want to 
+% for this tutorial we are going to use port 3000
+udp_receiver:start(3000).
+
+udp_receiver:stop().
+% Yep, is that simple :D
+```
+
+### UDP Sender
+
+``` Erlang
+% For starting the sender with the port of the server you want to connect to
+% For this tutorial we are going to use port 3000
+udp_sender:start(3000).
+
+% To send a message to the server(it will send it back to all of the other clients online).
+udp_sender:send("Message from sender").
+
+udp_sender:stop().
+```

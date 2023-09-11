@@ -32,8 +32,11 @@ loop(Socket) ->
             exit_udp(Socket),
             ok;
 
+        {udp, _, _, Port, <<"out">>} ->
+            server:delete(Port),
+            ok;
         {udp, Socket, Host, Port, Datos} ->
-            % get all the clients
+            % Get all the clients
             Map = server:get_data(),
             logger:notice("Received: ~p from: ~p on port ~p~n", [Datos, Host, Port]),
             % Check if the actual client is in the clients array
@@ -44,7 +47,7 @@ loop(Socket) ->
                 true ->
                     NewMap = Map
             end,
-            % send the message to each of the clients 
+            % Send the message to each of the clients 
             maps:foreach(fun(MPort, MSocket) ->
                 try
                     gen_udp:send(MSocket, Host, MPort, [<<"Received: ">>, Datos])

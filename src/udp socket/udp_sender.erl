@@ -53,8 +53,14 @@ loop(Socket, ServerPort) ->
             loop(Socket, ServerPort);
 
         stop ->
-            exit(self(), shutdown),
-            gen_udp:close(Socket);
+            try
+                gen_udp:send(Socket, ?SERVER_HOST, ServerPort, "out")
+            catch 
+                Any -> 
+                    logger:error("Error sending message to receiver, ERROR: ~p~n", [Any])
+            end,
+            gen_udp:close(Socket),
+            exit(self(), shutdown);
 
         {udp_error,Socket,econnreset} ->
             logger:error("Connection Error on socket: ~p~n", [Socket]),
