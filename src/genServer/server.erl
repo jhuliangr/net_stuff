@@ -3,7 +3,7 @@
 
 
 %                       API export 
--export([start_link/0, store/2, get/1, delete/1, get_keys/0, clear/0, sleep/0, stop/0]).
+-export([start_link/0, store/2, get/1, delete/1, get_keys/0, get_data/0, clear/0, sleep/0, stop/0]).
 
 %                       CALLBACKS export 
 -export([init/1, handle_call/3, handle_cast/2,handle_info/2, terminate/2, code_change/3, format_status/2]).
@@ -28,6 +28,8 @@ delete(Key) ->
     gen_server:cast(?SERVER,{delete, Key}).
 get_keys() ->
     gen_server:call(?SERVER,{get_keys}).
+get_data() ->
+    gen_server:call(?SERVER, {get_data}).
 sleep() ->
     gen_server:call(?SERVER, {sleep},6001).% The Last parameter is a timeout
 clear() ->
@@ -77,6 +79,9 @@ handle_call({get, Key}, _From, State) ->
 
 handle_call({get_keys}, _From, State) ->
     {reply, maps:keys(State), State};
+
+handle_call({get_data}, _From, State) ->
+    {reply, State};
 
 handle_call({sleep}, _From, State) ->
     timer:sleep(6000),

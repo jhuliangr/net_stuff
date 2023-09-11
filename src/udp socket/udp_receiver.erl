@@ -5,9 +5,14 @@
 %       Public Functions:                                                                                   %
 %===========================================================================================================%
 start(Port) ->
+    % server will save the clients online willing to send data
+    server:start_link(),
+    register(otp, otp:start()),
+    otp:save(otp, receiver_port, Port),
     register(receiver, spawn(fun() ->listen(Port) end)).
 
 stop()->
+    otp:stop(),
     receiver ! stop.
 
 %===========================================================================================================%
@@ -28,12 +33,15 @@ loop(Socket) ->
     receive
         {udp, Socket, _, _, <<"close">>} ->
             logger:notice("Receiver closed"),
+            otp:stop(),
             exit(self(), shutdown),
             gen_udp:close(Socket);
 
         {udp, Socket, Host, Port, Datos} ->
             logger:notice("Received: ~p from: ~p on port ~p~n", [Datos, Host, Port]),
             try
+                {Map} = server:get_data(),
+                io:format("Mapa: ~p~n", [Map]),
                 gen_udp:send(Socket, Host, Port, [<<"Received: ">>, Datos])
             catch
                 {error,closed} ->

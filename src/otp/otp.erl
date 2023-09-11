@@ -1,7 +1,7 @@
 -module(otp).
 
 %           Api Export
--export([start/0, save/3, print/1, get/2, clear/1, get_keys/1, get_data/1, delete/2]).
+-export([start/0, save/3, print/1, get/2, clear/1, get_keys/1, get_data/1, delete/2, stop/0]).
 
 %           Callback export
 -export([init/1, handle_call/3,handle_cast/2]).
@@ -50,6 +50,9 @@ get_keys(Pid) -> % For retrieving all the keys stored
 
 get_data(Pid) ->
     otp_interface:sync_call(Pid, {get_data}).
+
+stop() ->
+    exit(shutdown).
 %===========================================================================================================%
 %                               Handlers                                                                    %
 %===========================================================================================================%
@@ -85,10 +88,7 @@ handle_call({get_data}, PidRef, Maps) ->
 handle_call(_, _, _) ->
     io:fwrite("Unknown Command",[]).
 
-
-
-
-%Proceso.....................................................................
+% Process.....................................................................
 % loop(Maps) ->
 %     receive
 %         {store, Key, Val} ->
