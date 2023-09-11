@@ -81,14 +81,14 @@ handle_call({get_keys}, _From, State) ->
     {reply, maps:keys(State), State};
 
 handle_call({get_data}, _From, State) ->
-    {reply, State};
+    {reply, State, State};
 
 handle_call({sleep}, _From, State) ->
     timer:sleep(6000),
     {reply, ok , State};
 
 handle_call(Req, _, State) ->
-    io:format("Unespected CALL message: ~p~n",[Req]),
+    io:format("Unexpected CALL message: ~p~n",[Req]),
     {reply, ok, State}.
 
 % Handle Casts...............................................................................................
@@ -107,7 +107,7 @@ handle_cast({finish}, State) ->
     {stop, normal, State};
 
 handle_cast(Req, State) ->
-    io:format("Unespected CAST message: ~p~n",[Req]),
+    io:format("Unexpected CAST message: ~p~n",[Req]),
     {noreply, State}.
 
 % Handle Info ...............................................................................................
@@ -116,7 +116,7 @@ handle_info(timeout, State) ->
     {noreply, State};
 
 handle_info(Info, State) ->
-    io:format("Unespected Handle Info message: ~p~n",[Info]),
+    io:format("Unexpected Handle Info message: ~p~n",[Info]),
     {noreply, State}.
 % Others .....................................................................................................
 terminate(_, _) ->

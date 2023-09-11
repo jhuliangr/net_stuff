@@ -5,14 +5,11 @@
 %       Public Functions:                                                                                   %
 %===========================================================================================================%
 start(Port) ->
-    % server will save the clients online willing to send data
+    % server will have the clients array
     server:start_link(),
-    register(otp, otp:start()),
-    otp:save(otp, receiver_port, Port),
     register(receiver, spawn(fun() ->listen(Port) end)).
 
 stop()->
-    otp:stop(),
     receiver ! stop.
 
 %===========================================================================================================%
@@ -32,35 +29,50 @@ listen(Port) ->
 loop(Socket) ->
     receive
         {udp, Socket, _, _, <<"close">>} ->
-            logger:notice("Receiver closed"),
-            otp:stop(),
-            exit(self(), shutdown),
-            gen_udp:close(Socket);
+            exit_udp(Socket),
+            ok;
 
         {udp, Socket, Host, Port, Datos} ->
+            % get all the clients
+            Map = server:get_data(),
             logger:notice("Received: ~p from: ~p on port ~p~n", [Datos, Host, Port]),
-            try
-                {Map} = server:get_data(),
-                io:format("Mapa: ~p~n", [Map]),
-                gen_udp:send(Socket, Host, Port, [<<"Received: ">>, Datos])
-            catch
-                {error,closed} ->
-                    io:format("Error::: port closed");
-                Any -> 
-                    io:format("Error::: ~p", [Any])
-            end, 
+            % Check if the actual client is in the clients array
+            case maps:is_key(Port, Map) of 
+                false ->
+                    server:store(Port, Socket),
+                    NewMap = maps:put(Port, Socket, Map);
+                true ->
+                    NewMap = Map
+            end,
+            % send the message to each of the clients 
+            maps:foreach(fun(MPort, MSocket) ->
+                try
+                    gen_udp:send(MSocket, Host, MPort, [<<"Received: ">>, Datos])
+                catch
+                    {error,closed} ->
+                        io:format("Error::: port closed"),
+                        store:delete(MPort);
+                    Any -> 
+                        io:format("Error::: ~p", [Any])
+                end 
+            end, NewMap),
             loop(Socket);
 
         {udp_error,_,econnreset} ->
-            logger:error("Error connection reseted~n", []),
+            logger:error("Error connecting ~n", []),
             loop(Socket);
 
         stop ->
-            exit(self(), shutdown),
-            gen_udp:close(Socket),
+            exit_udp(Socket),
             ok;
         Msg ->
             logger:notice("It was received: ~p, which is not a known command for this receiver. .~n",[Msg]),
             loop(Socket)
     end.
+
+exit_udp(Socket) ->
+    logger:notice("Receiver closed"),
+    server:stop(),
+    gen_udp:close(Socket),
+    exit(self(), shutdown).
 
