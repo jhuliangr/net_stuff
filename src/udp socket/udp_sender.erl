@@ -1,20 +1,22 @@
 -module(udp_sender).
+
 %           API functions
 -export([start/1, send/1, stop/0]).
 
--define(SERVER_HOST, {127,0,0,1}).
+-define(SERVER_HOST, {127, 0, 0, 1}).
+
 %===========================================================================================================%
 %       Public Functions:                                                                                   %
 %===========================================================================================================%
 start(ServerPort) ->
     % look for an open port
-    Port = find_port(ServerPort+1),
+    Port = find_port(ServerPort + 1),
     register(sender, spawn(fun() -> listen(Port, ServerPort) end)).
 
 send(Msg) ->
     sender ! {send, Msg}.
 
-% closing the socket 
+% closing the socket
 stop() ->
     sender ! stop.
 
@@ -42,30 +44,26 @@ loop(Socket, ServerPort) ->
         {send, Msg} ->
             try
                 gen_udp:send(Socket, ?SERVER_HOST, ServerPort, Msg)
-            catch 
-                Any -> 
+            catch
+                Any ->
                     logger:error("Error sending message to receiver, ERROR: ~p~n", [Any])
             end,
             loop(Socket, ServerPort);
-
-        {udp, Socket,Host, ReceiverPort, Datos} ->
+        {udp, Socket, Host, ReceiverPort, Datos} ->
             io:format("Received: ~p from host: ~p on port ~p~n", [Datos, Host, ReceiverPort]),
             loop(Socket, ServerPort);
-
         stop ->
             try
                 gen_udp:send(Socket, ?SERVER_HOST, ServerPort, "out")
-            catch 
-                Any -> 
+            catch
+                Any ->
                     logger:error("Error sending message to receiver, ERROR: ~p~n", [Any])
             end,
             gen_udp:close(Socket),
             exit(self(), shutdown);
-
-        {udp_error,Socket,econnreset} ->
+        {udp_error, Socket, econnreset} ->
             logger:error("Connection Error on socket: ~p~n", [Socket]),
             loop(Socket, ServerPort);
-
         Mensaje ->
             io:format("Received: ~p, which is not a valid command for the client~n", [Mensaje]),
             loop(Socket, ServerPort)

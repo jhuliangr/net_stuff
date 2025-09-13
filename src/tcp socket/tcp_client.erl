@@ -1,8 +1,10 @@
 -module(tcp_client).
+
 %           API functions
 -export([start/1, send/2, close_socket/1]).
+
 %           For now we will work with our localhost
--define(SERVER_HOST, {127,0,0,1}).
+-define(SERVER_HOST, {127, 0, 0, 1}).
 
 %===========================================================================================================%
 %       Public Functions:                                                                                   %
@@ -11,7 +13,8 @@
 start(ServerPort) ->
     spawn(fun() -> connect(?SERVER_HOST, ServerPort) end).
 
-send(Pid, Message) -> % Message from client to server, Its argument most be the Pid of the client
+send(Pid,
+     Message) -> % Message from client to server, Its argument most be the Pid of the client
     Pid ! {send, Message}.
 
 close_socket(Pid) ->
@@ -27,11 +30,11 @@ connect(Host, Port) ->
         io:format("Connected to the server ~p successfully on port ~p~n", [Host, Port]),
         loop(Socket, Host, Port)
     catch
-        error:{badmatch,{error,econnrefused}} ->
+        error:{badmatch, {error, econnrefused}} ->
             io:format("Error, connection refused~n");
-        error:{badmatch,{error,etimedout}} ->
+        error:{badmatch, {error, etimedout}} ->
             io:format("Error, connection timeout~n");
-        error:{badmatch,{error,einval}} ->
+        error:{badmatch, {error, einval}} ->
             io:format("Error, invalid argument~n")
     end.
 
@@ -51,5 +54,4 @@ loop(Socket, Host, Port) ->
         Message ->
             io:format("Error, it was received this: ~p~n", [Message]),
             loop(Socket, Host, Port)
-        end.
-
+    end.

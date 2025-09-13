@@ -11,7 +11,7 @@ Run
 
 ## GenServer
 
-Working with a maps data sctructure making simple operations as Storing, Reading and deleting information 
+Working with a maps data structure making simple operations as Storing, Reading and deleting information 
 with a GenServer workflow
 
 ```Erlang
@@ -40,14 +40,14 @@ server:clear().
 server:stop().
 ```
 ## Open Telecom Plataform (OTP)
-Working with a maps data sctructure making simple operations as Storing, Reading and deleting information 
+Working with a maps data structure making simple operations as Storing, Reading and deleting information 
 with a OTP workflow
 ```Erlang
 % For starting the process and saving its identifier into Pid
 Pid = otp:start().
 
 % For storing data as Key => Value
-otp:save(Pid, llave, valor).
+otp:save(Pid, key, value).
 
 % For reading a value using its key to access it
 otp:get(Pid, key_you_want_to_store, value_for_that_key).
